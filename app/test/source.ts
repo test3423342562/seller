@@ -108,7 +108,7 @@ export default function useSource(params: UseSourceParams): UseSourceResult {
 }
 
 async function fetchBackendToken(id: string, f_token: string, ts: number) {
-  const res = await axios.post("https://zxcprime.site/backend/token", {
+  const res = await axios.post("/backend/token", {
     idd: id,
     f_token,
     ts,
