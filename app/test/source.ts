@@ -162,7 +162,7 @@ function buildSourceURL({
     params.append("e", imdbId);
   }
 
-  return `https://zxcprime.site/backend/servers/${server}?${params.toString()}`;
+  return `/backend/servers/${server}?${params.toString()}`;
 }
 
 export function generateFrontendToken(id: string) {
