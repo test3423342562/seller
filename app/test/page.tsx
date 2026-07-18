@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import useSource from "./source";
+import useSubtitle from "./subtitile";
 
-const SERVERS = ["icarus", "atlas", "orion"];
+const SERVERS = ["icarus", "atlas", "orion", "athena"];
 
 export default function SourcePlayer() {
-  const [tmdbId, setTmdbId] = useState("238");
-  const [imdbId, setImdbId] = useState("tt0068646");
-  const [title, setTitle] = useState("The Godfather");
-  const [year, setYear] = useState("1972");
+  const [tmdbId, setTmdbId] = useState("1184918");
+  const [imdbId, setImdbId] = useState("tt29623480");
+  const [title, setTitle] = useState("The Wild Robot");
+  const [year, setYear] = useState("2024");
   const [server, setServer] = useState("icarus");
   const [ready, setReady] = useState(false);
 
@@ -22,6 +23,17 @@ export default function SourcePlayer() {
     episode: 1,
     title,
     year,
+  });
+
+  const {
+    data: subtitleData,
+    isLoading: isSubtitleLoading,
+    isError: isSubtitleError,
+  } = useSubtitle({
+    media_type: "movie",
+    tmdbId: ready ? tmdbId : "",
+    season: 1,
+    episode: 1,
   });
 
   return (
@@ -106,6 +118,38 @@ export default function SourcePlayer() {
           </a>
         </div>
       ))}
+
+      {ready && (
+        <div className="mt-2">
+          <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
+            Subtitles
+          </p>
+
+          {isSubtitleLoading && (
+            <p className="text-sm text-zinc-500">Loading subtitles...</p>
+          )}
+          {isSubtitleError && (
+            <p className="text-sm text-red-400">Error fetching subtitles.</p>
+          )}
+          {!isSubtitleLoading &&
+            !isSubtitleError &&
+            subtitleData?.subtitles.length === 0 && (
+              <p className="text-sm text-zinc-500">No subtitles found.</p>
+            )}
+
+          {subtitleData?.subtitles.map((sub, i) => (
+            <div
+              key={sub.id ?? i}
+              className="flex justify-between text-sm border-b border-zinc-800 py-2"
+            >
+              <span>{sub.display}</span>
+              <a href={sub.file} target="_blank" className="text-blue-400">
+                open
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
