@@ -174,7 +174,6 @@ const PROXY_WORKERS = [
   // "https://berkas.test04-cee.workers.dev/",
 ];
 
-
 async function getNext8AMPH(): Promise<string> {
   const now = new Date();
   const ph = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
@@ -248,7 +247,10 @@ export async function GET(req: NextRequest) {
 
   if (!isAllowed) {
     return cors(
-      NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }),
+      NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      ),
     );
   }
 
@@ -278,21 +280,30 @@ export async function GET(req: NextRequest) {
     if (!tmdbId || !mediaType || !title || !year || !ts || !token) {
       logRequest(404, "missing params");
       return cors(
-        NextResponse.json({ success: false, error: "need token" }, { status: 404 }),
+        NextResponse.json(
+          { success: false, error: "need token" },
+          { status: 404 },
+        ),
       );
     }
 
     if (Date.now() - ts > 8000) {
       logRequest(403, "token expired");
       return cors(
-        NextResponse.json({ success: false, error: "Invalid token" }, { status: 403 }),
+        NextResponse.json(
+          { success: false, error: "Invalid token" },
+          { status: 403 },
+        ),
       );
     }
 
     if (!validateBackendToken(tmdbId, f_token, ts, token)) {
       logRequest(403, "invalid token");
       return cors(
-        NextResponse.json({ success: false, error: "Invalid token" }, { status: 403 }),
+        NextResponse.json(
+          { success: false, error: "Invalid token" },
+          { status: 403 },
+        ),
       );
     }
 
@@ -300,7 +311,10 @@ export async function GET(req: NextRequest) {
     if (!isValidReferer(referer)) {
       logRequest(403, "invalid referrer");
       return cors(
-        NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }),
+        NextResponse.json(
+          { success: false, error: "Forbidden" },
+          { status: 403 },
+        ),
       );
     }
 
@@ -337,14 +351,16 @@ export async function GET(req: NextRequest) {
 
       const res = await fetchWithTimeout(
         `${STREAMDATA_URL}?${qs.toString()}`,
-        { headers: {
+        {
+          headers: {
             "User-Agent":
               "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
             Origin: "https://nextgencloudfabric.com",
             Referer: "https://nextgencloudfabric.com/",
             Accept: "*/*",
             "Accept-Language": "en-US,en;q=0.7",
-          },},
+          },
+        },
         8000,
       );
       const data = await res.json();
@@ -354,7 +370,10 @@ export async function GET(req: NextRequest) {
       if (data?.status_code !== "200" || !streamUrls.length) {
         logRequest(404, "no streams found");
         return cors(
-          NextResponse.json({ success: false, error: "No streams found" }, { status: 404 }),
+          NextResponse.json(
+            { success: false, error: "No streams found" },
+            { status: 404 },
+          ),
         );
       }
 
@@ -382,12 +401,16 @@ export async function GET(req: NextRequest) {
     }
 
     const activeProxies = await getActiveProxies(PROXY_WORKERS);
-    const { worker: proxyWorker, proxyLeft } = await getHealthyWorker(activeProxies);
+    const { worker: proxyWorker, proxyLeft } =
+      await getHealthyWorker(activeProxies);
 
     if (!proxyWorker) {
       logRequest(503, "all proxy workers unavailable");
       return cors(
-        NextResponse.json({ success: false, error: "No proxy workers available" }, { status: 503 }),
+        NextResponse.json(
+          { success: false, error: "No proxy workers available" },
+          { status: 503 },
+        ),
       );
     }
 
@@ -417,7 +440,10 @@ export async function GET(req: NextRequest) {
     console.error("API Error:", err);
     logRequest(500, `exception: ${err?.message}`);
     return cors(
-      NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 }),
+      NextResponse.json(
+        { success: false, error: "Internal server error" },
+        { status: 500 },
+      ),
     );
   }
 }
