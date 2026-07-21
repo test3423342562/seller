@@ -172,6 +172,16 @@ const PROXY_WORKERS = [
   "https://berkas.test02-663.workers.dev/",
   // "https://berkas.test03-4fb.workers.dev/",
   // "https://berkas.test04-cee.workers.dev/",
+  "https://rapid-rain-5111.berkas002.workers.dev/",
+  "https://dry-unit-59a0.berkas001.workers.dev/",
+  "https://empty-cloud-4a95.berkas004.workers.dev/",
+  "https://noisy-star-55c7.berkas003.workers.dev/",
+  "https://twilight-sky-ee61.berkas006.workers.dev/",
+  "https://white-bar-36b1.berkas005.workers.dev/",
+  "https://wispy-frog-30dc.berkas007.workers.dev/",
+  "https://wispy-river-ce4f.berkas008.workers.dev/",
+  "https://mute-disk-de22.berkas0010.workers.dev/",
+  "https://still-sound-93be.berkas009.workers.dev/",
 ];
 
 async function getNext8AMPH(): Promise<string> {

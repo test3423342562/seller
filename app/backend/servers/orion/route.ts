@@ -120,6 +120,17 @@ const HOLLY_WORKERS = [
   "https://silent-rain-377c.test68-6e8.workers.dev/",
   "https://long-dew-a85b.test84-c55.workers.dev/",
   "https://muddy-sky-afea.test92-0aa.workers.dev/",
+  //
+  "https://green-resonance-ba27.orion001.workers.dev/",
+  "https://plain-tooth-a5ef.orion002.workers.dev/",
+  "https://lively-rice-79f8.orion004.workers.dev/",
+  "https://morning-mountain-b270.orion003.workers.dev/",
+  "https://young-poetry-2f1e.orion005.workers.dev/",
+  "https://broken-fire-37fb.orion006.workers.dev/",
+  "https://wispy-sea-c35e.orion008.workers.dev/",
+  "https://broken-pond-08af.orion007.workers.dev/",
+  "https://dry-rain-6c61.orion0010.workers.dev/",
+  "https://morning-paper-2c32.orion009.workers.dev/",
 ];
 
 export async function getWorkingProxy(proxies: string[]) {
