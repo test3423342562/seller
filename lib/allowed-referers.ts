@@ -13,7 +13,7 @@ const ALLOWED_REFERERS = [
   "https://ridomovies.co/",
   "https://www.ridomovies.co/",
   "https://5.161.93.9/",
-  "https://api-sell-production.up.railway.app/",
+  "https://zxcprime.up.railway.app/",
 ];
 
 export const ALLOWED_ORIGINS = [
@@ -32,7 +32,7 @@ export const ALLOWED_ORIGINS = [
   "https://www.ridomovies.co",
   "https://ridomovies.co",
   "https://5.161.93.9",
-  "https://api-sell-production.up.railway.app",
+  "https://zxcprime.up.railway.app",
 ];
 
 export function isValidReferer(referer: string): boolean {

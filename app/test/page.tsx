@@ -7,10 +7,10 @@ import useSubtitle from "./subtitile";
 const SERVERS = ["icarus", "atlas", "orion", "athena"];
 
 export default function SourcePlayer() {
-  const [tmdbId, setTmdbId] = useState("1184918");
-  const [imdbId, setImdbId] = useState("tt29623480");
-  const [title, setTitle] = useState("The Wild Robot");
-  const [year, setYear] = useState("2024");
+  const [tmdbId, setTmdbId] = useState("1339713");
+  const [imdbId, setImdbId] = useState("tt37287335");
+  const [title, setTitle] = useState("Obsession");
+  const [year, setYear] = useState("2025");
   const [server, setServer] = useState("icarus");
   const [ready, setReady] = useState(false);
 

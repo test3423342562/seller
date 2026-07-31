@@ -6,11 +6,57 @@ import { createClient } from "@supabase/supabase-js";
 import { encryptUrl } from "@/lib/encryptor";
 import { createCors, handleOptions } from "@/lib/cors";
 
+//AES_KEY
+//48cea93448b6719f32471b15777eb140db961b6ba6f1fc92cb92b0fdd7da555d
 const supabase = createClient(
   process.env.SUPABASE_URL_BERKAS!,
   process.env.SUPABASE_SERVICE_ROLE_KEY_BERKAS!,
 );
+async function getNext8AMPH(): Promise<string> {
+  const now = new Date();
+  const ph = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+  const next8AM = new Date(ph);
+  next8AM.setHours(8, 0, 0, 0);
+  if (ph >= next8AM) next8AM.setDate(next8AM.getDate() + 1);
+  const diff = next8AM.getTime() - ph.getTime();
+  return new Date(now.getTime() + diff).toISOString();
+}
+async function blacklistProxy(proxy: string) {
+  await supabase
+    .from("proxy_blacklist")
+    .upsert(
+      { proxy, expires_at: await getNext8AMPH() },
+      { onConflict: "proxy" },
+    );
+  console.log(`[PROXY] ⛔ blacklisted ${proxy}`);
+}
 
+async function getActiveProxies(proxies: string[]): Promise<string[]> {
+  const { data } = await supabase
+    .from("proxy_blacklist")
+    .select("proxy")
+    .gt("expires_at", new Date().toISOString());
+  const blocked = new Set((data ?? []).map((r: any) => r.proxy));
+  return proxies.filter((p) => !blocked.has(p));
+}
+async function getHealthyWorker(): Promise<string | null> {
+  const active = await getActiveProxies(PROXY_WORKERS);
+  const candidates = shuffle(active);
+  if (!candidates.length) return null;
+  for (const worker of candidates) {
+    try {
+      const res = await fetchWithTimeout(worker, { method: "HEAD" }, 3000);
+      if (res.status === 429) {
+        await blacklistProxy(worker);
+        continue;
+      }
+      if (res.ok) return worker;
+    } catch (err) {
+      console.error(worker, err);
+    }
+  }
+  return null;
+}
 // /workers/subdomain
 const PROXY_WORKERS = [
   "https://snowy-brook-8333.berkas016.workers.dev/",
@@ -182,36 +228,27 @@ const PROXY_WORKERS = [
   "https://wispy-river-ce4f.berkas008.workers.dev/",
   "https://mute-disk-de22.berkas0010.workers.dev/",
   "https://still-sound-93be.berkas009.workers.dev/",
+  //
+  "https://bitter-cake-30a3.berkas0001.workers.dev/",
+  "https://sparkling-union-988a.berkas0002.workers.dev/",
+  "https://floral-queen-8843.berkas0004.workers.dev/",
+  "https://late-band-520f.berkas0003.workers.dev/",
+  "https://purple-bar-caf1.berkas0006.workers.dev/",
+  "https://wispy-credit-3692.berkas0005.workers.dev/",
+  "https://proud-paper-2687.berkas0007.workers.dev/",
+  "https://morning-glade-1938.berkas0008.workers.dev/",
+  //
+  "https://delicate-haze-a9bb.invalid1.workers.dev/",
+  "https://muddy-butterfly-b8c9.invalid2.workers.dev/",
+  "https://holy-tooth-f9cb.invalid3.workers.dev/",
+  "https://dry-sun-eda6.invalid4.workers.dev/",
+  "https://nameless-wildflower-767a.invalid6.workers.dev/",
+  "https://wild-union-5a40.invalid5.workers.dev/",
+  "https://divine-night-80da.invalid8.workers.dev/",
+  "https://empty-frog-2095.invalid7.workers.dev/",
+  "https://cool-block-670c.invalid10.workers.dev/",
+  "https://black-cake-f379.invalid9.workers.dev/",
 ];
-
-async function getNext8AMPH(): Promise<string> {
-  const now = new Date();
-  const ph = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-  const next8AM = new Date(ph);
-  next8AM.setHours(8, 0, 0, 0);
-  if (ph >= next8AM) next8AM.setDate(next8AM.getDate() + 1);
-  const diff = next8AM.getTime() - ph.getTime();
-  return new Date(now.getTime() + diff).toISOString();
-}
-
-async function blacklistProxy(proxy: string) {
-  await supabase
-    .from("proxy_blacklist")
-    .upsert(
-      { proxy, expires_at: await getNext8AMPH() },
-      { onConflict: "proxy" },
-    );
-  console.log(`[PROXY] ⛔ blacklisted ${proxy}`);
-}
-
-async function getActiveProxies(proxies: string[]): Promise<string[]> {
-  const { data } = await supabase
-    .from("proxy_blacklist")
-    .select("proxy")
-    .gt("expires_at", new Date().toISOString());
-  const blocked = new Set((data ?? []).map((r: any) => r.proxy));
-  return proxies.filter((p) => !blocked.has(p));
-}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -220,30 +257,6 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-}
-
-async function getHealthyWorker(
-  candidates: string[],
-): Promise<{ worker: string | null; proxyLeft: number }> {
-  let proxyLeft = candidates.length;
-
-  for (const worker of shuffle(candidates)) {
-    try {
-      const res = await fetchWithTimeout(worker, { method: "HEAD" }, 3000);
-      if (res.status === 429) {
-        await blacklistProxy(worker);
-        proxyLeft -= 1;
-        continue;
-      }
-      if (res.ok) {
-        return { worker, proxyLeft };
-      }
-    } catch (err) {
-      console.error(worker, err);
-    }
-  }
-
-  return { worker: null, proxyLeft };
 }
 
 const STREAMDATA_URL = "https://streamdata.vaplayer.ru/api.php";
@@ -270,8 +283,15 @@ export async function GET(req: NextRequest) {
     const season = req.nextUrl.searchParams.get("c");
     const episode = req.nextUrl.searchParams.get("d");
     const extra = mediaType === "tv" ? `/${season}/${episode}` : "";
+
+    const ip =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
     console.log(
-      `[BERKAS] ${tmdbId}/${mediaType}${extra} | ${status} | ${reason}`,
+      `[BERKAS]  ${tmdbId}/${mediaType}${extra} | ${status} | ${reason} | ts: ${new Date().toISOString()} | IP: ${ip}`,
     );
   };
 
@@ -282,41 +302,39 @@ export async function GET(req: NextRequest) {
     const episode = req.nextUrl.searchParams.get("d");
     const title = req.nextUrl.searchParams.get("f");
     const year = req.nextUrl.searchParams.get("g");
-    const imdbId = req.nextUrl.searchParams.get("imdb"); // optional
     const ts = Number(req.nextUrl.searchParams.get("gago"));
     const token = req.nextUrl.searchParams.get("putangnamo")!;
     const f_token = req.nextUrl.searchParams.get("f_token")!;
 
     if (!tmdbId || !mediaType || !title || !year || !ts || !token) {
-      logRequest(404, "missing params");
+      logRequest(400, "missing params");
       return cors(
         NextResponse.json(
           { success: false, error: "need token" },
-          { status: 404 },
+          { status: 400 },
         ),
       );
     }
 
-    if (Date.now() - ts > 8000) {
-      logRequest(403, "token expired");
+    if (Date.now() - ts > 120000) {
+      logRequest(401, "token expired");
       return cors(
         NextResponse.json(
           { success: false, error: "Invalid token" },
-          { status: 403 },
+          { status: 401 },
         ),
       );
     }
 
     if (!validateBackendToken(tmdbId, f_token, ts, token)) {
-      logRequest(403, "invalid token");
+      logRequest(401, "invalid token");
       return cors(
         NextResponse.json(
           { success: false, error: "Invalid token" },
-          { status: 403 },
+          { status: 401 },
         ),
       );
     }
-
     const referer = req.headers.get("referer") || "";
     if (!isValidReferer(referer)) {
       logRequest(403, "invalid referrer");
@@ -327,7 +345,6 @@ export async function GET(req: NextRequest) {
         ),
       );
     }
-
     // -------- Cache Lookup --------
     let streamUrls: string[];
     let subtitles: any[];
@@ -345,7 +362,6 @@ export async function GET(req: NextRequest) {
     const { data: cached } = await cacheQuery;
 
     if (cached) {
-      console.log(`[BERKAS] cache hit`);
       streamUrls = cached.stream_urls ?? [];
       subtitles = cached.subtitles ?? [];
     } else {
@@ -410,9 +426,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const activeProxies = await getActiveProxies(PROXY_WORKERS);
-    const { worker: proxyWorker, proxyLeft } =
-      await getHealthyWorker(activeProxies);
+    const proxyWorker = await getHealthyWorker();
 
     if (!proxyWorker) {
       logRequest(503, "all proxy workers unavailable");
@@ -436,19 +450,17 @@ export async function GET(req: NextRequest) {
       }),
     );
 
-    logRequest(200, "OK!!!!!");
+    logRequest(200, "BERKAS OK!!!!!");
     return cors(
       NextResponse.json({
         success: true,
         links,
         subtitles,
         meow: !!cached,
-        proxyLeft,
       }),
     );
   } catch (err: any) {
     console.error("API Error:", err);
-    logRequest(500, `exception: ${err?.message}`);
     return cors(
       NextResponse.json(
         { success: false, error: "Internal server error" },
