@@ -14,6 +14,7 @@ const ALLOWED_REFERERS = [
   "https://www.ridomovies.co/",
   "https://5.161.93.9/",
   "https://zxcprime.up.railway.app/",
+  "https://zxcstream-backend.netlify.app/",
 ];
 
 export const ALLOWED_ORIGINS = [
@@ -33,6 +34,7 @@ export const ALLOWED_ORIGINS = [
   "https://ridomovies.co",
   "https://5.161.93.9",
   "https://zxcprime.up.railway.app",
+  "https://zxcstream-backend.netlify.app",
 ];
 
 export function isValidReferer(referer: string): boolean {
