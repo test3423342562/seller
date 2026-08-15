@@ -75,7 +75,7 @@ function validateFrontendToken(f_token: string, id: string, ts: number) {
     .createHash("sha256")
     .update(`${id}:${ts}`)
     .digest("hex");
-  return expected === f_token && Date.now() - ts < 5000;
+  return expected === f_token && Date.now() - ts < 120000;
 }
 
 function generateBackendToken(f_token: string, id: string) {
