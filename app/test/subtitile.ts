@@ -19,6 +19,8 @@ interface UseSubtitleParams {
   tmdbId: string;
   season?: number;
   episode?: number;
+  title: string;
+  year: string;
 }
 
 interface UseSubtitleResult {
@@ -31,7 +33,7 @@ interface UseSubtitleResult {
 export default function useSubtitle(
   params: UseSubtitleParams,
 ): UseSubtitleResult {
-  const { media_type, tmdbId, season, episode } = params;
+  const { media_type, tmdbId, season, episode, title, year } = params;
 
   const [data, setData] = useState<SubtitleResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +48,7 @@ export default function useSubtitle(
     (async () => {
       try {
         const { f_token, f_ts } = generateFrontendToken(String(tmdbId));
+
         const { ts, token } = await fetchBackendToken(tmdbId, f_token, f_ts);
 
         const url = buildSubtitleURL({
@@ -53,12 +56,15 @@ export default function useSubtitle(
           media_type,
           season,
           episode,
+          title,
+          year,
           ts,
           token,
           f_token,
         });
 
         const res = await axios.get(url);
+
         setData(res.data);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -66,9 +72,14 @@ export default function useSubtitle(
         setIsLoading(false);
       }
     })();
-  }, [tmdbId, media_type, season, episode]);
+  }, [tmdbId, media_type, season, episode, title, year]);
 
-  return { data, isLoading, isError: error !== null, error };
+  return {
+    data,
+    isLoading,
+    isError: error !== null,
+    error,
+  };
 }
 
 async function fetchBackendToken(id: string, f_token: string, ts: number) {
@@ -77,6 +88,7 @@ async function fetchBackendToken(id: string, f_token: string, ts: number) {
     f_token,
     ts,
   });
+
   return res.data;
 }
 
@@ -85,6 +97,8 @@ interface BuildSubtitleURLParams {
   media_type: string;
   season?: number;
   episode?: number;
+  title: string;
+  year: string;
   ts: number;
   token: string;
   f_token: string;
@@ -95,6 +109,8 @@ function buildSubtitleURL({
   media_type,
   season,
   episode,
+  title,
+  year,
   ts,
   token,
   f_token,
@@ -105,11 +121,18 @@ function buildSubtitleURL({
     gago: String(ts),
     putangnamo: token,
     f_token,
+    title,
+    date: year,
   });
 
   if (media_type === "tv") {
-    if (season !== undefined) params.append("c", String(season));
-    if (episode !== undefined) params.append("d", String(episode));
+    if (season !== undefined) {
+      params.append("c", String(season));
+    }
+
+    if (episode !== undefined) {
+      params.append("d", String(episode));
+    }
   }
 
   return `/backend/subtitle?${params.toString()}`;

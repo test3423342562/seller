@@ -40,6 +40,8 @@ export default function SourcePlayer() {
     tmdbId: ready ? tmdbId : "",
     season: Number(season),
     episode: Number(episode),
+    title,
+    year,
   });
 
   const handleMediaTypeChange = (type: "movie" | "tv") => {
