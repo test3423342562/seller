@@ -20,16 +20,19 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Keep the existing params
     const tmdbId = req.nextUrl.searchParams.get("a");
     const mediaType = req.nextUrl.searchParams.get("b");
     const season = req.nextUrl.searchParams.get("c");
     const episode = req.nextUrl.searchParams.get("d");
-    const ts = Number(req.nextUrl.searchParams.get("gago"));
-    const token = req.nextUrl.searchParams.get("putangnamo")!;
-    const f_token = req.nextUrl.searchParams.get("f_token")!;
 
-    if (!tmdbId || !mediaType || !ts || !token) {
+    const title = req.nextUrl.searchParams.get("title");
+    const date = req.nextUrl.searchParams.get("date");
+
+    const ts = Number(req.nextUrl.searchParams.get("gago"));
+    const token = req.nextUrl.searchParams.get("putangnamo");
+    const f_token = req.nextUrl.searchParams.get("f_token");
+
+    if (!tmdbId || !mediaType || !title || !date || !ts || !token || !f_token) {
       return cors(
         NextResponse.json(
           { success: false, error: "need token" },
@@ -67,10 +70,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Forward only the extraction params to Backend B
     const params = new URLSearchParams({
       tmdbId,
       mediaType,
+      title,
+      date,
       ...(season && { season }),
       ...(episode && { episode }),
     });
@@ -84,7 +88,7 @@ export async function GET(req: NextRequest) {
 
     const data = await res.json();
 
-    if (!data.success) {
+    if (!res.ok || !data.success) {
       return cors(
         NextResponse.json(
           {
@@ -92,7 +96,7 @@ export async function GET(req: NextRequest) {
             error: data.error || "extraction failed",
           },
           {
-            status: data.status || 500,
+            status: data.status || res.status || 500,
           },
         ),
       );
