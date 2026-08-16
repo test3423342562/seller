@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateBackendToken } from "@/lib/validate-token";
 import { isValidReferer } from "@/lib/allowed-referers";
-import { createClient } from "@supabase/supabase-js";
 import { createCors, handleOptions } from "@/lib/cors";
-
-const supabaseSubtitle = createClient(
-  process.env.SUPABASE_URL_MOVIEBOX_SUBTITLE!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY_MOVIEBOX_SUBTITLE!,
-);
 
 export async function OPTIONS(req: NextRequest) {
   return handleOptions(req);
@@ -26,6 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Keep the existing params
     const tmdbId = req.nextUrl.searchParams.get("a");
     const mediaType = req.nextUrl.searchParams.get("b");
     const season = req.nextUrl.searchParams.get("c");
@@ -62,6 +57,7 @@ export async function GET(req: NextRequest) {
     }
 
     const referer = req.headers.get("referer") || "";
+
     if (!isValidReferer(referer)) {
       return cors(
         NextResponse.json(
@@ -71,32 +67,39 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { data } = await supabaseSubtitle
-      .from("moviebox_subtitles_cache")
-      .select("subtitles")
-      .eq("tmdb_id", tmdbId)
-      .eq("media_type", mediaType)
-      .eq("season", season ?? "")
-      .eq("episode", episode ?? "")
-      .maybeSingle();
+    // Forward only the extraction params to Backend B
+    const params = new URLSearchParams({
+      tmdbId,
+      mediaType,
+      ...(season && { season }),
+      ...(episode && { episode }),
+    });
 
-    if (!data) {
+    const res = await fetch(
+      `https://school-project-production-9d70.up.railway.app/subtitle?${params.toString()}`,
+      {
+        method: "GET",
+      },
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
       return cors(
         NextResponse.json(
-          { success: false, error: "Subtitles not found" },
-          { status: 404 },
+          {
+            success: false,
+            error: data.error || "extraction failed",
+          },
+          {
+            status: data.status || 500,
+          },
         ),
       );
     }
 
-    return cors(
-      NextResponse.json({
-        success: true,
-        subtitles: data?.subtitles ?? [],
-        cached: !!data,
-      }),
-    );
-  } catch (err: any) {
+    return cors(NextResponse.json(data));
+  } catch {
     return cors(
       NextResponse.json(
         { success: false, error: "Internal server error" },
